@@ -1,3 +1,0 @@
-{
-  "comment": "Using external cron service instead of Vercel Cron to avoid Hobby plan limitations"
-}
