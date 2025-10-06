@@ -41,9 +41,9 @@ export async function POST(request: NextRequest) {
         }
 
         // Mark as running
-        // @ts-ignore - Supabase type inference issue
         await supabaseAdmin
           .from('jobs')
+          // @ts-expect-error - Supabase type inference issue
           .update({
             state: 'running',
             attempts: job.attempts + 1,
@@ -67,9 +67,9 @@ export async function POST(request: NextRequest) {
         }
 
         // Mark as done
-        // @ts-ignore - Supabase type inference issue
         await supabaseAdmin
           .from('jobs')
+          // @ts-expect-error - Supabase type inference issue
           .update({ state: 'done' })
           .eq('id', job.id)
 
@@ -80,9 +80,9 @@ export async function POST(request: NextRequest) {
         // Mark as failed if max attempts reached
         const newState = job.attempts + 1 >= job.max_attempts ? 'failed' : 'pending'
 
-        // @ts-ignore - Supabase type inference issue
         await supabaseAdmin
           .from('jobs')
+          // @ts-expect-error - Supabase type inference issue
           .update({
             state: newState,
             last_error: error.message,

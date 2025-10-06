@@ -6,7 +6,7 @@ export const tesseractProvider: OCRProvider = {
   name: 'tesseract',
 
   async recognize(imageBuffer: Buffer, options?: OCROptions): Promise<OCRResult[]> {
-    const worker = await createWorker()
+    const worker: any = await createWorker()
 
     try {
       const language = options?.language || 'jpn+eng'

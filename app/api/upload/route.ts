@@ -60,9 +60,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Create project
-    // @ts-ignore - Supabase type inference issue
     const { data: project, error: projectError } = await supabaseAdmin
       .from('projects')
+      // @ts-expect-error - Supabase type inference issue
       .insert({
         owner_id: userId,
         title,
@@ -112,9 +112,9 @@ export async function POST(request: NextRequest) {
     const successfulPages = pages.filter(p => p !== null)
 
     // Update project with page count
-    // @ts-ignore - Supabase type inference issue
     await supabaseAdmin
       .from('projects')
+      // @ts-expect-error - Supabase type inference issue
       .update({
         total_pages: successfulPages.length,
         status: 'processing',
@@ -123,13 +123,15 @@ export async function POST(request: NextRequest) {
 
     // Create OCR jobs for each page
     for (const page of successfulPages) {
-      // @ts-ignore - Supabase type inference issue
-      await supabaseAdmin.from('jobs').insert({
-        project_id: (project as any).id,
-        job_type: 'ocr',
-        state: 'pending',
-        metadata: { page_id: (page as any).id },
-      })
+      await supabaseAdmin
+        .from('jobs')
+        // @ts-expect-error - Supabase type inference issue
+        .insert({
+          project_id: (project as any).id,
+          job_type: 'ocr',
+          state: 'pending',
+          metadata: { page_id: (page as any).id },
+        })
     }
 
     logger.info({ projectId: (project as any).id, pageCount: successfulPages.length }, 'Upload completed')
@@ -163,6 +165,7 @@ async function processPage(
     const height = metadata.height!
 
     // Upload to Vercel Blob
+    // @ts-expect-error - Vercel Blob type compatibility
     const blob = await put(`originals/${projectId}/${pageIndex}.${metadata.format || 'png'}`, imageBuffer, {
       access: 'public',
     })
@@ -170,6 +173,7 @@ async function processPage(
     // Insert page record
     const { data: page, error } = await supabaseAdmin
       .from('pages')
+      // @ts-expect-error - Supabase type inference issue
       .insert({
         project_id: projectId,
         page_index: pageIndex,
