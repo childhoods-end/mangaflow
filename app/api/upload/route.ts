@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       .select('id', { count: 'exact', head: true })
       .eq('owner_id', userId)
 
-    const planLimit = PLAN_LIMITS[profile.plan as keyof typeof PLAN_LIMITS]
+    const planLimit = PLAN_LIMITS[(profile as any).plan as keyof typeof PLAN_LIMITS] || PLAN_LIMITS.free
 
     if (planLimit.maxProjects !== -1 && (count || 0) >= planLimit.maxProjects) {
       return NextResponse.json(
@@ -65,13 +65,13 @@ export async function POST(request: NextRequest) {
       .insert({
         owner_id: userId,
         title,
-        content_rating: contentRating,
+        content_rating: contentRating as any,
         source_language: sourceLang,
         target_language: targetLang,
         rights_declaration: rightsDeclaration,
         total_pages: 0,
-        status: 'pending',
-      })
+        status: 'pending' as any,
+      } as any)
       .select()
       .single()
 
@@ -92,16 +92,17 @@ export async function POST(request: NextRequest) {
 
         // Extract images from zip
         for (const [filename, zipEntry] of Object.entries(zip.files)) {
-          if (zipEntry.dir) continue
+          const entry = zipEntry as any
+          if (entry.dir) continue
           if (!/\.(jpg|jpeg|png|webp)$/i.test(filename)) continue
 
-          const imageBuffer = Buffer.from(await zipEntry.async('arraybuffer'))
-          pagePromises.push(processPage(imageBuffer, project.id, pageIndex++, planLimit.maxPagesPerProject))
+          const imageBuffer = Buffer.from(await entry.async('arraybuffer'))
+          pagePromises.push(processPage(imageBuffer, (project as any).id, pageIndex++, planLimit.maxPagesPerProject))
         }
       } else {
         // Process individual image
         const imageBuffer = Buffer.from(await file.arrayBuffer())
-        pagePromises.push(processPage(imageBuffer, project.id, pageIndex++, planLimit.maxPagesPerProject))
+        pagePromises.push(processPage(imageBuffer, (project as any).id, pageIndex++, planLimit.maxPagesPerProject))
       }
     }
 
@@ -114,24 +115,24 @@ export async function POST(request: NextRequest) {
       .from('projects')
       .update({
         total_pages: successfulPages.length,
-        status: 'processing'
-      })
-      .eq('id', project.id)
+        status: 'processing' as any,
+      } as any)
+      .eq('id', (project as any).id)
 
     // Create OCR jobs for each page
     for (const page of successfulPages) {
       await supabaseAdmin.from('jobs').insert({
-        project_id: project.id,
-        job_type: 'ocr',
-        state: 'pending',
-        metadata: { page_id: page.id },
-      })
+        project_id: (project as any).id,
+        job_type: 'ocr' as any,
+        state: 'pending' as any,
+        metadata: { page_id: (page as any).id },
+      } as any)
     }
 
-    logger.info({ projectId: project.id, pageCount: successfulPages.length }, 'Upload completed')
+    logger.info({ projectId: (project as any).id, pageCount: successfulPages.length }, 'Upload completed')
 
     return NextResponse.json({
-      projectId: project.id,
+      projectId: (project as any).id,
       pageCount: successfulPages.length,
     })
   } catch (error) {

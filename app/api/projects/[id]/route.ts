@@ -57,13 +57,14 @@ export async function PATCH(
     const body = await request.json()
     const { title, content_rating, status } = body
 
+    const updateData: any = {}
+    if (title) updateData.title = title
+    if (content_rating) updateData.content_rating = content_rating
+    if (status) updateData.status = status
+
     const { data: project, error } = await supabaseAdmin
       .from('projects')
-      .update({
-        ...(title && { title }),
-        ...(content_rating && { content_rating }),
-        ...(status && { status }),
-      })
+      .update(updateData)
       .eq('id', params.id)
       .eq('owner_id', userId)
       .select()

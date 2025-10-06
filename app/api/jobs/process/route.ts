@@ -8,7 +8,7 @@ export const maxDuration = 300
 
 /**
  * Job processor endpoint
- * Can be triggered by Vercel Cron or manually
+ * Can be triggered by external cron services or manually
  */
 export async function POST(request: NextRequest) {
   try {
@@ -19,41 +19,46 @@ export async function POST(request: NextRequest) {
     }
 
     // Get pending jobs
-    const { data: jobs, error } = await supabaseAdmin
+    const { data, error } = await supabaseAdmin
       .from('jobs')
       .select('*')
       .eq('state', 'pending')
-      .lt('attempts', supabaseAdmin.from('jobs').select('max_attempts'))
       .order('created_at', { ascending: true })
       .limit(10)
 
-    if (error || !jobs || jobs.length === 0) {
+    if (error || !data || data.length === 0) {
       return NextResponse.json({ processed: 0 })
     }
 
-    const results = []
+    const results: any[] = []
 
-    for (const job of jobs) {
+    for (const job of data) {
       try {
+        // Skip if job has exceeded max attempts
+        if (job.attempts >= job.max_attempts) {
+          continue
+        }
+
         // Mark as running
         await supabaseAdmin
           .from('jobs')
           .update({
             state: 'running',
             attempts: job.attempts + 1,
-          })
+          } as any)
           .eq('id', job.id)
 
         // Process based on job type
+        const metadata = job.metadata as any
         switch (job.job_type) {
           case 'ocr':
-            await processOcrJob(job.metadata.page_id, job.project_id)
+            await processOcrJob(metadata?.page_id, job.project_id)
             break
           case 'translate':
             await processTranslateJob(job.project_id)
             break
           case 'render':
-            await processRenderJob(job.metadata.page_id, job.project_id)
+            await processRenderJob(metadata?.page_id, job.project_id)
             break
           default:
             throw new Error(`Unknown job type: ${job.job_type}`)
@@ -62,7 +67,7 @@ export async function POST(request: NextRequest) {
         // Mark as done
         await supabaseAdmin
           .from('jobs')
-          .update({ state: 'done' })
+          .update({ state: 'done' } as any)
           .eq('id', job.id)
 
         results.push({ jobId: job.id, status: 'success' })
@@ -77,7 +82,7 @@ export async function POST(request: NextRequest) {
           .update({
             state: newState,
             last_error: error.message,
-          })
+          } as any)
           .eq('id', job.id)
 
         results.push({ jobId: job.id, status: 'failed', error: error.message })
