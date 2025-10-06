@@ -62,6 +62,7 @@ export async function PATCH(
     if (content_rating) updateData.content_rating = content_rating
     if (status) updateData.status = status
 
+    // @ts-ignore - Supabase type inference issue
     const { data: project, error } = await supabaseAdmin
       .from('projects')
       .update(updateData)

@@ -30,9 +30,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ processed: 0 })
     }
 
+    const jobs = data as any[]
     const results: any[] = []
 
-    for (const job of data) {
+    for (const job of jobs) {
       try {
         // Skip if job has exceeded max attempts
         if (job.attempts >= job.max_attempts) {
@@ -40,12 +41,13 @@ export async function POST(request: NextRequest) {
         }
 
         // Mark as running
+        // @ts-ignore - Supabase type inference issue
         await supabaseAdmin
           .from('jobs')
           .update({
             state: 'running',
             attempts: job.attempts + 1,
-          } as any)
+          })
           .eq('id', job.id)
 
         // Process based on job type
@@ -65,9 +67,10 @@ export async function POST(request: NextRequest) {
         }
 
         // Mark as done
+        // @ts-ignore - Supabase type inference issue
         await supabaseAdmin
           .from('jobs')
-          .update({ state: 'done' } as any)
+          .update({ state: 'done' })
           .eq('id', job.id)
 
         results.push({ jobId: job.id, status: 'success' })
@@ -77,12 +80,13 @@ export async function POST(request: NextRequest) {
         // Mark as failed if max attempts reached
         const newState = job.attempts + 1 >= job.max_attempts ? 'failed' : 'pending'
 
+        // @ts-ignore - Supabase type inference issue
         await supabaseAdmin
           .from('jobs')
           .update({
             state: newState,
             last_error: error.message,
-          } as any)
+          })
           .eq('id', job.id)
 
         results.push({ jobId: job.id, status: 'failed', error: error.message })

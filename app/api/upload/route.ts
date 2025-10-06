@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     if (planLimit.maxProjects !== -1 && (count || 0) >= planLimit.maxProjects) {
       return NextResponse.json(
-        { error: `Project limit reached for ${profile.plan} plan` },
+        { error: `Project limit reached for ${(profile as any).plan} plan` },
         { status: 403 }
       )
     }
@@ -60,18 +60,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Create project
+    // @ts-ignore - Supabase type inference issue
     const { data: project, error: projectError } = await supabaseAdmin
       .from('projects')
       .insert({
         owner_id: userId,
         title,
-        content_rating: contentRating as any,
+        content_rating: contentRating,
         source_language: sourceLang,
         target_language: targetLang,
         rights_declaration: rightsDeclaration,
         total_pages: 0,
-        status: 'pending' as any,
-      } as any)
+        status: 'pending',
+      })
       .select()
       .single()
 
@@ -111,22 +112,24 @@ export async function POST(request: NextRequest) {
     const successfulPages = pages.filter(p => p !== null)
 
     // Update project with page count
+    // @ts-ignore - Supabase type inference issue
     await supabaseAdmin
       .from('projects')
       .update({
         total_pages: successfulPages.length,
-        status: 'processing' as any,
-      } as any)
+        status: 'processing',
+      })
       .eq('id', (project as any).id)
 
     // Create OCR jobs for each page
     for (const page of successfulPages) {
+      // @ts-ignore - Supabase type inference issue
       await supabaseAdmin.from('jobs').insert({
         project_id: (project as any).id,
-        job_type: 'ocr' as any,
-        state: 'pending' as any,
+        job_type: 'ocr',
+        state: 'pending',
         metadata: { page_id: (page as any).id },
-      } as any)
+      })
     }
 
     logger.info({ projectId: (project as any).id, pageCount: successfulPages.length }, 'Upload completed')
