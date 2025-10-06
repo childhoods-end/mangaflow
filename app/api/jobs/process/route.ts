@@ -12,6 +12,12 @@ export const maxDuration = 300
  */
 export async function POST(request: NextRequest) {
   try {
+    // Verify cron secret key (for external cron services)
+    const cronKey = request.headers.get('x-cron-key')
+    if (process.env.CRON_SECRET_KEY && cronKey !== process.env.CRON_SECRET_KEY) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     // Get pending jobs
     const { data: jobs, error } = await supabaseAdmin
       .from('jobs')

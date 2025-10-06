@@ -1,8 +1,3 @@
 {
-  "crons": [
-    {
-      "path": "/api/jobs/process",
-      "schedule": "0 */6 * * *"
-    }
-  ]
+  "comment": "Using external cron service instead of Vercel Cron to avoid Hobby plan limitations"
 }
